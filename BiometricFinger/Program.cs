@@ -21,16 +21,41 @@ namespace BiometricFinger
         {
             using (var context = new db_Entidades())
             {
-                insertaHuellasDesdeCarpeta();
+                //insertaHuellasDesdeCarpeta();
                 var usuarios = context.Usuario.ToList();
-                foreach (var usu in usuarios)
+                List<Person> personas = new List<Person>();
+                foreach (var u in usuarios)
                 {
-                    byte[] finger = usu.finger;
+                    /*byte[] finger = usu.finger;
                     MemoryStream stream = new MemoryStream(finger, 0, finger.Length);
                     stream.Position = 0;
-                    Image image = Image.FromStream(stream);
-                    Console.WriteLine(usu.id + " " + usu.username + " " + usu.finger);
+                    Image image = Image.FromStream(stream);*/
+                    Fingerprint fingerPrint = new Fingerprint();
+                    fingerPrint.AsIsoTemplate = u.finger;
+                    Person personaAUX = new Person();
+                    personaAUX.Fingerprints.Add(fingerPrint);
+                    personas.Add(personaAUX);
+                    Console.WriteLine(u.id + " " + u.username + " " + u.finger);
                 }
+                DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
+                AfisEngine Afis = new AfisEngine();
+
+                Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\alterImages\020_2_2_muchas_lineas.jpg", true);
+                Fingerprint f = new Fingerprint();
+                f.AsBitmap = image1;
+                Usuario usu = new Usuario();
+                Person persona = new Person();
+                persona.Fingerprints.Add(f);
+                Afis.Extract(persona);
+
+                Afis.Threshold = 10;
+                Person encontrada = Afis.Identify(persona, personas).FirstOrDefault() as Person;
+                if(encontrada == null)
+                {
+                    Console.WriteLine("No se ha encontrado");
+                }
+                float score = Afis.Verify(persona, encontrada);
+                Console.WriteLine("Encontrado con: {0:F3} ", score);
             }
             //            Application.EnableVisualStyles();
             //          Application.SetCompatibleTextRenderingDefault(false);
