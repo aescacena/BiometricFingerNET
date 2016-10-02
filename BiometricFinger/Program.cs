@@ -4,10 +4,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Data.Entity;
-using System.Data.Entity.Validation;
 
 namespace BiometricFinger
 {
@@ -26,10 +22,6 @@ namespace BiometricFinger
                 List<Person> personas = new List<Person>();
                 foreach (var u in usuarios)
                 {
-                    /*byte[] finger = usu.finger;
-                    MemoryStream stream = new MemoryStream(finger, 0, finger.Length);
-                    stream.Position = 0;
-                    Image image = Image.FromStream(stream);*/
                     Fingerprint fingerPrint = new Fingerprint();
                     fingerPrint.AsIsoTemplate = u.finger;
                     Person personaAUX = new Person();
@@ -64,7 +56,6 @@ namespace BiometricFinger
         static void insertaHuellasDesdeCarpeta()
         {
             // Initialize path to images
-            //DirectoryInfo di = new DirectoryInfo(@"C:\Users\PC_STE_19\Documents\visual studio 2015\Projects\BiometricFinger\images");
             DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
             Console.WriteLine("No search pattern returns:");
             List<Usuario> usuarios = new List<Usuario>();
