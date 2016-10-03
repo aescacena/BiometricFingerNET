@@ -29,10 +29,10 @@ namespace BiometricFinger
                     personas.Add(personaAUX);
                     Console.WriteLine(u.id + " " + u.username + " " + u.finger);
                 }
-                DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
                 AfisEngine Afis = new AfisEngine();
 
-                Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\alterImages\020_2_2_muchas_lineas.jpg", true);
+                //Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images\020_2_2_muchas_lineas.jpg", true);
+                Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\alterImages\020_2_2_muchas_lineas.jpg", true);
                 Fingerprint f = new Fingerprint();
                 f.AsBitmap = image1;
                 Usuario usu = new Usuario();
@@ -45,9 +45,10 @@ namespace BiometricFinger
                 if(encontrada == null)
                 {
                     Console.WriteLine("No se ha encontrado");
+                }else{
+                    float score = Afis.Verify(persona, encontrada);
+                    Console.WriteLine("Encontrado con: {0:F3} ", score);
                 }
-                float score = Afis.Verify(persona, encontrada);
-                Console.WriteLine("Encontrado con: {0:F3} ", score);
             }
             //            Application.EnableVisualStyles();
             //          Application.SetCompatibleTextRenderingDefault(false);
@@ -56,7 +57,8 @@ namespace BiometricFinger
         static void insertaHuellasDesdeCarpeta()
         {
             // Initialize path to images
-            DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
+            DirectoryInfo di = new DirectoryInfo(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\images");
+            //DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
             Console.WriteLine("No search pattern returns:");
             List<Usuario> usuarios = new List<Usuario>();
             using (var context = new db_Entidades())
@@ -64,8 +66,8 @@ namespace BiometricFinger
                 foreach (var fi in di.GetFiles())
                 {
                     AfisEngine Afis = new AfisEngine();
-                    //Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\images\" + fi.Name, true);
-                    Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images\" + fi.Name, true);
+                    Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\images\" + fi.Name, true);
+                    //Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images\" + fi.Name, true);
                     Fingerprint f = new Fingerprint();
                     f.AsBitmap = image1;
                     Usuario usu = new Usuario();
