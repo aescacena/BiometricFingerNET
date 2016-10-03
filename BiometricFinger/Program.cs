@@ -12,7 +12,6 @@ namespace BiometricFinger
 {
     static class Program
     {
-
         public static int numThreads = 2;
         
         static void Main()
@@ -147,19 +146,11 @@ namespace BiometricFinger
             using (var ms = new MemoryStream(inBuffer))
             {
                 Image image = Image.FromStream(ms);
-                //image.Save(@"C:\newImage.jpg");
                 bmp = (Bitmap)image;
             }
-
-            /*Bitmap bmp;
-            using (var ms = new MemoryStream(inBuffer))
-            {
-                bmp = new Bitmap(ms);
-            }*/
             
             Fingerprint f = new Fingerprint();
             f.AsBitmap = bmp;
-            //Usuario usu = new Usuario();
             Person persona = new Person();
             persona.Fingerprints.Add(f);
             AfisEngine Afis = new AfisEngine();
@@ -184,22 +175,4 @@ namespace BiometricFinger
             return outBuffer.Length + 2;
         }
     }
-
-   /* public class ReadFileToStream
-    {
-        private string fn;
-        private StreamString ss;
-
-        public ReadFileToStream(StreamString str, string filename)
-        {
-            fn = filename;
-            ss = str;
-        }
-
-        public void Start()
-        {
-            //string contents = File.ReadAllText(fn);
-            ss.WriteString("test");
-        }
-    }*/
 }
