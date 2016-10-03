@@ -12,6 +12,13 @@ namespace BiometricFinger
 {
     static class Program
     {
+        // Hereda de Person(Libreria SourceAFIS) para añadir campo id del Usuario de BBDD a esta instancia
+        [Serializable]
+        public class UsuarioAFIS : Person
+        {
+            public int id;
+        }
+
         public static int numThreads = 2;
         
         static void Main()
@@ -40,53 +47,56 @@ namespace BiometricFinger
                     NamedPipeServerStream pipeServer = new NamedPipeServerStream("testfinger", PipeDirection.InOut, numThreads);
 
                     int threadId = Thread.CurrentThread.ManagedThreadId;
-                    // Wait for a client to connect
+                    // Esperar a que un cliente se conecte
                     pipeServer.WaitForConnection();
                     Console.WriteLine("Cliente conectado a thread[{0}] .", threadId);
                     try
                     {
-                        // Read the request from the client. Once the client has
-                        // written to the pipe its security token will be available.
-
+                        // Leer la solicitud del cliente. Una vez que el cliente ha escrito a la tubería estará disponible.
                         StreamTemplate sT = new StreamTemplate(pipeServer);
+                        sT.WriteString("Conectado al servidor");
 
-                        // Verify our identity to the connected client using a
-                        // string that the client anticipates.
+                        Fingerprint fingerPrint = sT.ReadPerson();
+                        UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
+                        usuarioABuscar.Fingerprints.Add(fingerPrint);
 
-                        sT.WriteString("I am the one true server!");
-                        Person person = sT.ReadPerson();
-
-                        var usuarios = context.Usuario.ToList();
-                        List<Person> persons = new List<Person>();
-                        foreach (var u in usuarios)
-                        {
-                            Fingerprint fingerPrint = new Fingerprint();
-                            fingerPrint.AsIsoTemplate = u.finger;
-                            Person personAUX = new Person();
-                            personAUX.Fingerprints.Add(fingerPrint);
-                            persons.Add(personAUX);
-                            //Console.WriteLine(u.id + " " + u.username + " " + u.finger);
-                        }
+                        //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
                         AfisEngine Afis = new AfisEngine();
-
+                        // Marcamos límite para verificar una huella como encontrada
                         Afis.Threshold = 10;
-                        Person encontrada = Afis.Identify(person, persons).FirstOrDefault() as Person;
-                        if (encontrada == null)
+                        Afis.Extract(usuarioABuscar);
+
+                        //Obtenemos los usuarios registrados en la base de datos
+                        var usuariosBBDD = context.Usuario.ToList();
+                        //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
+                        List<UsuarioAFIS> usuariosAFIS = new List<UsuarioAFIS>();
+                        foreach (var usuario in usuariosBBDD)
+                        {
+                            Fingerprint fingerPrintAUX = new Fingerprint();
+                            fingerPrintAUX.AsIsoTemplate = usuario.finger;
+                            UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                            usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
+                            usuariosAFIS.Add(usuarioAFIS_AUX);
+                        }
+                        //Realiza la busqueda 
+                        UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, usuariosAFIS).FirstOrDefault() as UsuarioAFIS;
+                        if (usuarioEncontrado == null)
                         {
                             Console.WriteLine("No se ha encontrado");
                         }
                         else
                         {
-                            float score = Afis.Verify(person, encontrada);
-                            Console.WriteLine("Encontrado con: {0:F3} ", score);
+                            //Obtenemos la puntuación de los usuarios identificados
+                            float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
+                            Console.WriteLine("Encontrado con: {0:F3} ", puntuacion);
                         }
                     }
-                    // Catch the IOException that is raised if the pipe is broken
-                    // or disconnected.
+                    //Captura IOException si la tubería se rompe o desconecta.
                     catch (IOException e)
                     {
                         Console.WriteLine("ERROR: {0}", e.Message);
                     }
+                    //Cerramos la tubería
                     pipeServer.Close();
                 }
             }
@@ -134,7 +144,7 @@ namespace BiometricFinger
             streamEncoding = new UnicodeEncoding();
         }
 
-        public Person ReadPerson()
+        public Fingerprint ReadPerson()
         {
             int len = 0;
 
@@ -149,14 +159,10 @@ namespace BiometricFinger
                 bmp = (Bitmap)image;
             }
             
-            Fingerprint f = new Fingerprint();
-            f.AsBitmap = bmp;
-            Person persona = new Person();
-            persona.Fingerprints.Add(f);
-            AfisEngine Afis = new AfisEngine();
-            Afis.Extract(persona);
+            Fingerprint fingerPrint = new Fingerprint();
+            fingerPrint.AsBitmap = bmp;
 
-            return persona;
+            return fingerPrint;
         }
 
         public int WriteString(string outString)
