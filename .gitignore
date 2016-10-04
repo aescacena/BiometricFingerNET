@@ -250,3 +250,10 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+#Carpeta debug
+BiometricFinger/bin/Debug/BiometricFinger.exe
+BiometricFinger/bin/Debug/BiometricFinger.pdb
+BiometricFinger/obj/Debug/BiometricFinger.exe
+BiometricFinger/obj/Debug/BiometricFinger.pdb
+.vs/BiometricFinger/v14/.suo
