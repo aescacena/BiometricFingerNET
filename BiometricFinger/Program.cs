@@ -44,6 +44,10 @@ namespace BiometricFinger
             {
                 using (var context = new db_Entidades()){
 
+                   /* PipeSecurity ps = new PipeSecurity();
+                    //Is this okay to do?  Everyone Read/Write?
+                    PipeAccessRule psRule = new PipeAccessRule("@Everyone", PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow);
+                    ps.AddAccessRule(psRule);*/
                     NamedPipeServerStream pipeServer = new NamedPipeServerStream("testfinger", PipeDirection.InOut, numThreads);
 
                     int threadId = Thread.CurrentThread.ManagedThreadId;
