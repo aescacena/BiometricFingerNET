@@ -7,11 +7,15 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Net.Sockets;
 
 namespace BiometricFinger
 {
     static class Program
     {
+
+        private static Server server;
+
         // Hereda de Person(Libreria SourceAFIS) para añadir campo id del Usuario de BBDD a esta instancia
         [Serializable]
         public class UsuarioAFIS : Person
@@ -24,7 +28,7 @@ namespace BiometricFinger
         static void Main()
         {
             //insertaHuellasDesdeCarpeta();
-            Thread[] server = new Thread[numThreads];
+            /*Thread[] server = new Thread[numThreads];
             Console.WriteLine("\n*** Esperando la conexión de clientes...");
 
             for(int i = 0; i<numThreads; i++)
@@ -32,10 +36,49 @@ namespace BiometricFinger
                 server[i] = new Thread(ServerThread);
                 server[i].Start();
             }
-            Thread.Sleep(250);
+            Thread.Sleep(250);*/
             //            Application.EnableVisualStyles();
             //          Application.SetCompatibleTextRenderingDefault(false);
             //        Application.Run(new Form1());
+
+            server = new Server(8888);
+            //server.OnDataReceived += new ServerHandlePacketData(server_OnDataReceived);
+            server.Start();
+
+            Console.WriteLine("To exit, type 'exit'");
+            while (true)
+            {
+                String s = Console.ReadLine();
+                if ("exit".Equals(s))
+                {
+                    break;
+                }
+                //If the user types "count", print out the number of connected clients
+                else if ("count".Equals(s))
+                {
+                    Console.WriteLine(server.NumClients);
+                }
+            }
+
+            Environment.Exit(0);
+
+        }
+
+        static void server_OnDataReceived(byte[] data, int bytesRead, TcpClient client, int type)
+        {
+            if(type == 0)
+            {
+                ASCIIEncoding encoder = new ASCIIEncoding();
+                string message = encoder.GetString(data, 0, bytesRead);
+                Console.WriteLine("Received a message: " + message);
+                server.SendImmediateToAll(encoder.GetBytes("Enviado: "+ message + ". Ahora espera a recibir la imagen"));
+            }
+            if(type == 1){
+                ASCIIEncoding encoder = new ASCIIEncoding();
+                string message = encoder.GetString(data, 0, bytesRead);
+                Console.WriteLine("Received a message: " + message);
+                server.SendImmediateToAll(encoder.GetBytes("Enviado: " + message + ". Imagen recibida y comprobada"));
+            }
         }
 
         private static void ServerThread(object data)
