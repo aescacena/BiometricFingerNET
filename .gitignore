@@ -256,8 +256,9 @@ BiometricFinger/bin/Debug/BiometricFinger.exe
 BiometricFinger/bin/Debug/BiometricFinger.pdb
 BiometricFinger/obj/Debug/BiometricFinger.exe
 BiometricFinger/obj/Debug/BiometricFinger.pdb
-.vs/BiometricFinger/v14/.suo
-*.vs/BiometricFinger/v14/.suo
+
+#.vs/BiometricFinger/v14/.suo
+*.suo
 
 # Download this file using PowerShell v3 under Windows with the following comand:
 # Invoke-WebRequest https://gist.githubusercontent.com/kmorcinek/2710267/raw/ -OutFile .gitignore
