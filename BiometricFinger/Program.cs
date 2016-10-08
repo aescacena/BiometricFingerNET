@@ -7,11 +7,15 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Net.Sockets;
 
 namespace BiometricFinger
 {
     static class Program
     {
+
+        private static Server server;
+
         // Hereda de Person(Libreria SourceAFIS) para añadir campo id del Usuario de BBDD a esta instancia
         [Serializable]
         public class UsuarioAFIS : Person
@@ -24,7 +28,7 @@ namespace BiometricFinger
         static void Main()
         {
             //insertaHuellasDesdeCarpeta();
-            Thread[] server = new Thread[numThreads];
+            /*Thread[] server = new Thread[numThreads];
             Console.WriteLine("\n*** Esperando la conexión de clientes...");
 
             for(int i = 0; i<numThreads; i++)
@@ -32,68 +36,112 @@ namespace BiometricFinger
                 server[i] = new Thread(ServerThread);
                 server[i].Start();
             }
-            Thread.Sleep(250);
+            Thread.Sleep(250);*/
             //            Application.EnableVisualStyles();
             //          Application.SetCompatibleTextRenderingDefault(false);
             //        Application.Run(new Form1());
+
+            server = new Server(8888);
+            //server.OnDataReceived += new ServerHandlePacketData(server_OnDataReceived);
+            server.Start();
+
+            Console.WriteLine("To exit, type 'exit'");
+            while (true)
+            {
+                String s = Console.ReadLine();
+                if ("exit".Equals(s))
+                {
+                    break;
+                }
+                //If the user types "count", print out the number of connected clients
+                else if ("count".Equals(s))
+                {
+                    Console.WriteLine(server.NumClients);
+                }
+            }
+
+            Environment.Exit(0);
+
+        }
+
+        static void server_OnDataReceived(byte[] data, int bytesRead, TcpClient client, int type)
+        {
+            if(type == 0)
+            {
+                ASCIIEncoding encoder = new ASCIIEncoding();
+                string message = encoder.GetString(data, 0, bytesRead);
+                Console.WriteLine("Received a message: " + message);
+                server.SendImmediateToAll(encoder.GetBytes("Enviado: "+ message + ". Ahora espera a recibir la imagen"));
+            }
+            if(type == 1){
+                ASCIIEncoding encoder = new ASCIIEncoding();
+                string message = encoder.GetString(data, 0, bytesRead);
+                Console.WriteLine("Received a message: " + message);
+                server.SendImmediateToAll(encoder.GetBytes("Enviado: " + message + ". Imagen recibida y comprobada"));
+            }
         }
 
         private static void ServerThread(object data)
         {
             while (true)
             {
-                using (var context = new db_Entidades())
-                {
+                using (var context = new db_Entidades()){
+
+                   /* PipeSecurity ps = new PipeSecurity();
+                    //Is this okay to do?  Everyone Read/Write?
+                    PipeAccessRule psRule = new PipeAccessRule("@Everyone", PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow);
+                    ps.AddAccessRule(psRule);*/
                     NamedPipeServerStream pipeServer = new NamedPipeServerStream("testfinger", PipeDirection.InOut, numThreads);
 
                     int threadId = Thread.CurrentThread.ManagedThreadId;
                     // Esperar a que un cliente se conecte
                     pipeServer.WaitForConnection();
                     Console.WriteLine("Cliente conectado a thread[{0}] .", threadId);
-                    try
-                    {
+                    try{
                         // Leer la solicitud del cliente. Una vez que el cliente ha escrito a la tubería estará disponible.
-                        StreamTemplate sT = new StreamTemplate(pipeServer);
-                        sT.WriteString("Conectado al servidor");
+                        ComunicacionStream cS = new ComunicacionStream(pipeServer);
+                        cS.enviaCadena("Conectado al servidor");
 
-                        Fingerprint fingerPrint = sT.ReadPerson();
+                        Fingerprint fingerPrint = cS.leeImage();
                         UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
                         usuarioABuscar.Fingerprints.Add(fingerPrint);
 
                         //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
                         AfisEngine Afis = new AfisEngine();
                         // Marcamos límite para verificar una huella como encontrada
-                        Afis.Threshold = 10;
+                        Afis.Threshold = 100;
                         Afis.Extract(usuarioABuscar);
 
                         //Obtenemos los usuarios registrados en la base de datos
                         var usuariosBBDD = context.Usuario.ToList();
                         //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
-                        List<UsuarioAFIS> usuariosAFIS = new List<UsuarioAFIS>();
-                        foreach (var usuario in usuariosBBDD)
-                        {
+                        List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
+
+                        foreach (var usuario in usuariosBBDD){
                             Fingerprint fingerPrintAUX = new Fingerprint();
                             fingerPrintAUX.AsIsoTemplate = usuario.finger;
                             UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                            usuarioAFIS_AUX.id = usuario.id;
                             usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
-                            usuariosAFIS.Add(usuarioAFIS_AUX);
+                            listaUsuariosAFIS.Add(usuarioAFIS_AUX);
                         }
                         //Realiza la busqueda 
-                        UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, usuariosAFIS).FirstOrDefault() as UsuarioAFIS;
-                        if (usuarioEncontrado == null)
-                        {
+                        UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
+                        if (usuarioEncontrado == null){
                             Console.WriteLine("No se ha encontrado");
+                            cS.enviaCadena("NO IDENTIFICADO");
                         }
-                        else
-                        {
+                        else{
                             //Obtenemos la puntuación de los usuarios identificados
                             float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
-                            Console.WriteLine("Encontrado con: {0:F3} ", puntuacion);
+                            Usuario usuarioCompleto = usuariosBBDD.Find(x => x.id == usuarioEncontrado.id);
+                            cS.enviaCadena("IDENTIFICADO");
+                            cS.enviaCadena(usuarioCompleto.username);
+                            Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioCompleto.username);
                         }
                     }
                     //Captura IOException si la tubería se rompe o desconecta.
-                    catch (IOException e)
-                    {
+                    catch (IOException e){
                         Console.WriteLine("ERROR: {0}", e.Message);
                     }
                     //Cerramos la tubería
@@ -104,7 +152,7 @@ namespace BiometricFinger
 
         static void insertaHuellasDesdeCarpeta()
         {
-            // Initialize path to images
+            // Inicializa la carpeta de imagenes
             DirectoryInfo di = new DirectoryInfo(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\images");
             //DirectoryInfo di = new DirectoryInfo(@"C:\Users\aesca\OneDrive\Documentos\Visual Studio 2015\Projects\BiometricFinger\images");
             Console.WriteLine("No search pattern returns:");
@@ -130,55 +178,6 @@ namespace BiometricFinger
                 }
                 context.SaveChanges();
             }
-        }
-    }
-
-    public class StreamTemplate
-    {
-        private Stream ioStream;
-        private UnicodeEncoding streamEncoding;
-
-        public StreamTemplate(Stream ioStream)
-        {
-            this.ioStream = ioStream;
-            streamEncoding = new UnicodeEncoding();
-        }
-
-        public Fingerprint ReadPerson()
-        {
-            int len = 0;
-
-            len = ioStream.ReadByte() * 256;
-            len += ioStream.ReadByte();
-            byte[] inBuffer = new byte[len];
-            ioStream.Read(inBuffer, 0, len);
-            Bitmap bmp;
-            using (var ms = new MemoryStream(inBuffer))
-            {
-                Image image = Image.FromStream(ms);
-                bmp = (Bitmap)image;
-            }
-            
-            Fingerprint fingerPrint = new Fingerprint();
-            fingerPrint.AsBitmap = bmp;
-
-            return fingerPrint;
-        }
-
-        public int WriteString(string outString)
-        {
-            byte[] outBuffer = streamEncoding.GetBytes(outString);
-            int len = outBuffer.Length;
-            if (len > UInt16.MaxValue)
-            {
-                len = (int)UInt16.MaxValue;
-            }
-            ioStream.WriteByte((byte)(len / 256));
-            ioStream.WriteByte((byte)(len & 255));
-            ioStream.Write(outBuffer, 0, len);
-            ioStream.Flush();
-
-            return outBuffer.Length + 2;
         }
     }
 }
