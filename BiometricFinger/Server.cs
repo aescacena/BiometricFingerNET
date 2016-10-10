@@ -12,7 +12,7 @@ namespace BiometricFinger
     public delegate void ServerHandlePacketData(byte[] data, int bytesRead, TcpClient client, int type);
 
     /// <summary>
-    /// Implements a simple TCP server which uses one thread per client
+    /// Implementa un servidor TCP simple que utiliza un hilo por cliente
     /// </summary>
     public class Server
     {
@@ -27,7 +27,7 @@ namespace BiometricFinger
         private bool started = false;
 
         /// <summary>
-        /// The list of currently connected clients
+        /// Lista de clientes conectados actualmente
         /// </summary>
         public List<TcpClient> Clients
         {
@@ -38,7 +38,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// The number of clients currently connected
+        /// Número de clientes conectados actualmente
         /// </summary>
         public int NumClients
         {
@@ -49,7 +49,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Constructs a new TCP server which will listen on a given port
+        /// Construye un nuevo servidor TCP que se escucha en un puerto dado
         /// </summary>
         /// <param name="port"></param>
         public Server(int port)
@@ -60,11 +60,12 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Begins listening on the port provided to the constructor
+        /// Comienza a escuchar en el puerto proporcionado al constructor
         /// </summary>W
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.189"), port);
+            //listener = new TcpListener(IPAddress.Parse("161.33.129.189"), port);
+            listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
             Thread thread = new Thread(new ThreadStart(ListenForClients));
@@ -73,7 +74,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Runs in its own thread. Responsible for accepting new clients and kicking them off into their own thread
+        /// Se ejecuta en su propio hilo. Responsable de aceptar nuevos clientes
         /// </summary>
         private void ListenForClients()
         {
@@ -98,7 +99,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Stops the server from accepting new clients
+        /// Detiene el servidor a aceptar nuevos clientes
         /// </summary>
         public void Stop()
         {
@@ -110,8 +111,8 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// This method lives on a thread, one per client. Responsible for reading data from the client
-        /// and pushing the data off to classes listening to the server.
+        /// Este método se ejecuta en un hilo, uno por cliente. Responsable de la lectura de datos desde el
+        /// cliente y enviando los datos al cliente.
         /// </summary>
         /// <param name="client"></param>
         private void WorkWithClient(object client)
@@ -119,7 +120,7 @@ namespace BiometricFinger
             TcpClient tcpClient = client as TcpClient;
             if (tcpClient == null)
             {
-                Console.WriteLine("TCP client is null, stopping processing for this client");
+                Console.WriteLine("TCP cliente es nulo, detener el procesamiento de este cliente");
                 DisconnectClient(tcpClient);
                 return;
             }
@@ -134,23 +135,22 @@ namespace BiometricFinger
 
                 try
                 {
-                    //blocks until a client sends a message
-                    bytesRead = clientStream.Read(clientBuffers[tcpClient].ReadBuffer, 0, readBufferSize);
-                    while((bytesRead += clientStream.Read(clientBuffers[tcpClient].ReadBuffer, 0, readBufferSize)) !=0)
-                    {
-
-                    }
+                    //bloquea hasta que un cliente envía un mensaje
+                    int len = clientStream.ReadByte() * 256;
+                    len += clientStream.ReadByte();
+                    clientBuffers[tcpClient].ReadImage = new byte[len];
+                    bytesRead = clientStream.Read(clientBuffers[tcpClient].ReadImage, 0, len);
                 }
                 catch
                 {
-                    //a socket error has occurred
+                    //Se ha producido un error de socket
                     Console.WriteLine("A socket error has occurred with client: " + tcpClient.ToString());
                     break;
                 }
 
                 if (bytesRead == 0)
                 {
-                    //the client has disconnected from the server
+                    //el cliente ha desconectado del servidor
                     break;
                 }
 
@@ -179,7 +179,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Removes a given client from our list of clients
+        /// Elimina un cliente determinado de nuestra lista de clientes
         /// </summary>
         /// <param name="client"></param>
         private void DisconnectClient(TcpClient client)
@@ -199,10 +199,10 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Adds data to the packet to be sent out, but does not send it across the network
+        /// Agrega datos para que el paquete sea enviado, pero no lo envía a través de la red
         /// </summary>
-        /// <param name="data">The data to be sent</param>
-        /// <param name="client">The client to send the data to</param>
+        /// <param name="data">Los datos para enviart</param>
+        /// <param name="client">Cliente al que se le envía</param>
         public void AddToPacket(byte[] data, TcpClient client)
         {
             if (clientBuffers[client].CurrentWriteByteCount + data.Length > clientBuffers[client].WriteBuffer.Length)
@@ -216,10 +216,10 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Adds data to the packet to be sent out, but does not send it across the network. This
-        /// data gets sent to every connected client
+        /// Agrega datos para que el paquete sea enviado. 
+        /// Estos datos se envía a cada cliente conectado
         /// </summary>
-        /// <param name="data">The data to be sent</param>
+        /// <param name="data">Los datos que se envían</param>
         public void AddToPacketToAll(byte[] data)
         {
             lock (clients)
@@ -239,7 +239,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Flushes all outgoing data to the specified client
+        /// Envía y vacía todos los datos salientes al cliente identificado
         /// </summary>
         /// <param name="client"></param>
         private void FlushData(TcpClient client)
@@ -250,7 +250,7 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Flushes all outgoing data to every client
+        /// Envía y vacía todos los datos salientes a cada cliente
         /// </summary>
         private void FlushDataToAll()
         {
@@ -266,10 +266,10 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Sends the byte array data immediately to the specified client
+        /// Envía los datos inmediatamente al cliente especificado
         /// </summary>
-        /// <param name="data">The data to be sent</param>
-        /// <param name="client">The client to send the data to</param>
+        /// <param name="data">Los datos que se envían</param>
+        /// <param name="client">Cliente a enviar los datos</param>
         public void SendImmediate(byte[] data, TcpClient client)
         {
             AddToPacket(data, client);
@@ -277,9 +277,9 @@ namespace BiometricFinger
         }
 
         /// <summary>
-        /// Sends the byte array data immediately to all clients
+        /// Envía los datos de inmediato a todos los clientes
         /// </summary>
-        /// <param name="data">The data to be sent</param>
+        /// <param name="data">Los datos que se envían</param>
         public void SendImmediateToAll(byte[] data)
         {
             lock (clients)

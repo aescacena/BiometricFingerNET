@@ -14,5 +14,6 @@ namespace BiometricFinger
         public byte[] WriteBuffer;
         public byte[] ReadBuffer;
         public int CurrentWriteByteCount;
+        public byte[] ReadImage;
     }
 }
