@@ -134,9 +134,6 @@ namespace BiometricFinger
 
             while (started)
             {
-                cS.limpiar();
-                estado = cS.leeCadena();
-                //Console.WriteLine("-->" + estado);
                 try
                 {
                     switch (estado)
@@ -173,6 +170,8 @@ namespace BiometricFinger
                             break;
                         default:
                             //Console.WriteLine("Default case");
+                            cS.limpiar();
+                            estado = cS.leeCadena();
                             break;
                     }
                 }catch
