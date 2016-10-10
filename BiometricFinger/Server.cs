@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Concurrent;
+using SourceAFIS.Simple;
+using static BiometricFinger.Program;
 
 namespace BiometricFinger
 {
@@ -64,8 +66,8 @@ namespace BiometricFinger
         /// </summary>W
         public void Start()
         {
-            //listener = new TcpListener(IPAddress.Parse("161.33.129.189"), port);
-            listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.193"), port);
+            //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
             Thread thread = new Thread(new ThreadStart(ListenForClients));
@@ -84,7 +86,7 @@ namespace BiometricFinger
             {
                 TcpClient client = listener.AcceptTcpClient();
                 Thread clientThread = new Thread(new ParameterizedThreadStart(WorkWithClient));
-                Console.WriteLine("New client connected");
+                Console.WriteLine("Nuevo cliente conectado");
 
                 NetworkBuffer newBuff = new NetworkBuffer();
                 newBuff.WriteBuffer = new byte[sendBufferSize];
@@ -124,46 +126,66 @@ namespace BiometricFinger
                 DisconnectClient(tcpClient);
                 return;
             }
-
-            NetworkStream clientStream = tcpClient.GetStream();
-            int bytesRead;
-            string type = "INICIAL";
+            ComunicacionStream cS = new ComunicacionStream(tcpClient.GetStream());
+            
+            Fingerprint fingerPrint = null;
+            Boolean clienteConectado = true;
+            string estado = "INICIAL";
 
             while (started)
             {
-                bytesRead = 0;
-
+                cS.limpiar();
+                estado = cS.leeCadena();
+                //Console.WriteLine("-->" + estado);
                 try
                 {
-                    //bloquea hasta que un cliente envía un mensaje
-                    int len = clientStream.ReadByte() * 256;
-                    len += clientStream.ReadByte();
-                    clientBuffers[tcpClient].ReadImage = new byte[len];
-                    bytesRead = clientStream.Read(clientBuffers[tcpClient].ReadImage, 0, len);
-                }
-                catch
+                    switch (estado)
+                    {
+                        case "VERIFICA_HUELLA":
+                            //bloquea hasta que un cliente envía imagen de dedo
+                            Console.WriteLine("Recibe imagen de huella dactilar");
+                            fingerPrint = cS.leeImage();
+                            Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
+                            Usuario usuarioVerificado = verificaHuella(fingerPrint);
+                            //cS.enviaUsuario(usuarioVerificado);
+                            if (usuarioVerificado != null)
+                            {
+                                cS.enviaCadena("ID: " + usuarioVerificado.id + ", Nombre: " + usuarioVerificado.username);
+                            }
+                            else
+                            {
+                                cS.enviaCadena("NO VERIFICADO");
+                                estado = "";
+                            }
+                            break;
+                        case "RECIBE_OPERACION":
+                            Console.WriteLine("Espera la operación a realizar por operario. (Entrada/Salida/CambiarTarea)");
+                            cS.limpiar();
+                            string operacionOperario = cS.leeCadena();
+                            Console.WriteLine(operacionOperario);
+                            cS.enviaCadena("Operación registrada");
+                            estado = "FIN";
+                            break;
+                        case "FIN":
+                            //cS.enviaCadena("Cierre de conexión");
+                            //started = false;
+                            clienteConectado = false;
+                            break;
+                        default:
+                            //Console.WriteLine("Default case");
+                            break;
+                    }
+                }catch
                 {
                     //Se ha producido un error de socket
-                    Console.WriteLine("A socket error has occurred with client: " + tcpClient.ToString());
+                    Console.WriteLine("Un error de socket ha ocurrido con el cliente: " + tcpClient.ToString());
                     break;
                 }
 
-                if (bytesRead == 0)
+                if (!clienteConectado)
                 {
-                    //el cliente ha desconectado del servidor
+                    //el cliente ha desconectado del servidor o se fuerza la desconexión
                     break;
-                }
-
-                if (type == "INICIAL")
-                {
-                    ASCIIEncoding encoder = new ASCIIEncoding();
-                    string message = encoder.GetString(clientBuffers[tcpClient].ReadBuffer, 0, bytesRead);
-                    Console.WriteLine(message);
-                    type = message;
-                }
-                if(type == "COMPRUEBA_HUELLAs")
-                {
-                    
                 }
 
                /* if (OnDataReceived != null)
@@ -290,6 +312,56 @@ namespace BiometricFinger
                     FlushData(client);
                 }
             }
+        }
+
+        private Usuario verificaHuella(Fingerprint fingerPrint)
+        {
+            Usuario usuarioVerificado = null;
+
+            using (var context = new db_Entidades())
+            {
+                UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
+                usuarioABuscar.Fingerprints.Add(fingerPrint);
+
+                //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
+                AfisEngine Afis = new AfisEngine();
+                // Marcamos límite para verificar una huella como encontrada
+                Afis.Threshold = 100;
+                Afis.Extract(usuarioABuscar);
+
+                //Obtenemos los usuarios registrados en la base de datos
+                var usuariosBBDD = context.Usuario.ToList();
+                //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
+                List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
+
+                foreach (var usuario in usuariosBBDD)
+                {
+                    Fingerprint fingerPrintAUX = new Fingerprint();
+                    fingerPrintAUX.AsIsoTemplate = usuario.finger;
+                    UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                    usuarioAFIS_AUX.id = usuario.id;
+                    usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
+                    listaUsuariosAFIS.Add(usuarioAFIS_AUX);
+                }
+                //Realiza la busqueda 
+                UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
+                if (usuarioEncontrado == null)
+                {
+                    Console.WriteLine("No se ha encontrado");
+                    //cS.enviaCadena("NO IDENTIFICADO");
+                    usuarioVerificado = null;
+                }
+                else
+                {
+                    //Obtenemos la puntuación de los usuarios identificados
+                    float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
+                    usuarioVerificado = usuariosBBDD.Find(x => x.id == usuarioEncontrado.id);
+                    //cS.enviaCadena("IDENTIFICADO");
+                    //cS.enviaCadena(usuarioCompleto.username);
+                    Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.username);
+                }
+            }
+            return usuarioVerificado;
         }
     }
 }

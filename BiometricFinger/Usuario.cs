@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace BiometricFinger
 {
+    [Serializable]
     [Table("user")]
     public class Usuario
     {

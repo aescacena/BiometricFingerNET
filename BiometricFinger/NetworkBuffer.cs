@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 
@@ -14,6 +15,6 @@ namespace BiometricFinger
         public byte[] WriteBuffer;
         public byte[] ReadBuffer;
         public int CurrentWriteByteCount;
-        public byte[] ReadImage;
+        public Image huella { get; set; }
     }
 }

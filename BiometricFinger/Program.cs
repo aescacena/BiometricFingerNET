@@ -28,15 +28,7 @@ namespace BiometricFinger
         static void Main()
         {
             //insertaHuellasDesdeCarpeta();
-            /*Thread[] server = new Thread[numThreads];
-            Console.WriteLine("\n*** Esperando la conexión de clientes...");
 
-            for(int i = 0; i<numThreads; i++)
-            {
-                server[i] = new Thread(ServerThread);
-                server[i].Start();
-            }
-            Thread.Sleep(250);*/
             //            Application.EnableVisualStyles();
             //          Application.SetCompatibleTextRenderingDefault(false);
             //        Application.Run(new Form1());

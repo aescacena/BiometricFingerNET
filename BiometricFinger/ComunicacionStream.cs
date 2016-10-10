@@ -1,20 +1,25 @@
-﻿using SourceAFIS.Simple;
+﻿using BiometricFinger;
+using SourceAFIS.Simple;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BiometricFinger
 {
-    public class ComunicacionStream{
+    public class ComunicacionStream
+    {
         private Stream ioStream;
         private UnicodeEncoding streamEncoding;
 
-        public ComunicacionStream(Stream ioStream){
+        public ComunicacionStream(Stream ioStream)
+        {
             this.ioStream = ioStream;
             streamEncoding = new UnicodeEncoding();
         }
@@ -27,7 +32,8 @@ namespace BiometricFinger
         /// </remarks>
         /// <param name="outString"></param>
         /// <returns>int</returns>
-        public int enviaCadena(string outString){
+        public int enviaCadena(string outString)
+        {
             byte[] outBuffer = streamEncoding.GetBytes(outString);
             int len = outBuffer.Length;
             if (len > UInt16.MaxValue)
@@ -44,6 +50,7 @@ namespace BiometricFinger
         public string leeCadena()
         {
             int len;
+            ioStream.Flush();
             len = ioStream.ReadByte() * 256;
             len += ioStream.ReadByte();
             byte[] inBuffer = new byte[len];
@@ -60,7 +67,8 @@ namespace BiometricFinger
         /// parar crear FingerPrint con dicha Image.
         /// </remarks>
         /// <returns>Fingerprint</returns>
-        public Fingerprint leeImage(){
+        public Fingerprint leeImage()
+        {
             int len = 0;
 
             len = ioStream.ReadByte() * 256;
@@ -68,7 +76,8 @@ namespace BiometricFinger
             byte[] inBuffer = new byte[len];
             ioStream.Read(inBuffer, 0, len);
             Bitmap bmp;
-            using (var ms = new MemoryStream(inBuffer)){
+            using (var ms = new MemoryStream(inBuffer))
+            {
                 Image image = Image.FromStream(ms);
                 bmp = (Bitmap)image;
             }
@@ -78,7 +87,8 @@ namespace BiometricFinger
 
             return fingerPrint;
         }
-        public int enviaImagen(Image image){
+        public int enviaImagen(Image image)
+        {
             byte[] imageData;
             using (var ms = new MemoryStream())
             {
@@ -99,6 +109,27 @@ namespace BiometricFinger
             ioStream.Flush();
 
             return 1;
+        }
+
+        public int enviaUsuario(Usuario usuarioVerificado)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            try
+            {
+                formatter.Serialize(ioStream, usuarioVerificado);
+                ioStream.Flush();
+            }
+            catch (SerializationException e)
+            {
+                Console.WriteLine("Error al realizar la Serialización de Usuario");
+            }
+
+            return 1;
+        }
+
+        public void limpiar()
+        {
+            ioStream.Flush();
         }
     }
 }
