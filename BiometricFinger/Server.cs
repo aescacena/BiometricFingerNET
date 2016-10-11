@@ -174,7 +174,7 @@ namespace BiometricFinger
                             estado = cS.leeCadena();
                             break;
                     }
-                }catch
+                }catch(Exception e)
                 {
                     //Se ha producido un error de socket
                     Console.WriteLine("Un error de socket ha ocurrido con el cliente: " + tcpClient.ToString());

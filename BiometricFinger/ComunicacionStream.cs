@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -70,7 +71,7 @@ namespace BiometricFinger
         public Fingerprint leeImage()
         {
             int len = 0;
-
+            
             len = ioStream.ReadByte() * 256;
             len += ioStream.ReadByte();
             byte[] inBuffer = new byte[len];
@@ -86,6 +87,12 @@ namespace BiometricFinger
             fingerPrint.AsBitmap = bmp;
 
             return fingerPrint;
+
+            /*Image image = Image.FromStream(ioStream);
+            Fingerprint fingerPrint = new Fingerprint();
+            fingerPrint.AsBitmap = (Bitmap)image;
+
+            return fingerPrint;*/
         }
         public int enviaImagen(Image image)
         {
