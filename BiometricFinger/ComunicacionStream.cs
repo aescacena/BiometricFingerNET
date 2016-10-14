@@ -76,11 +76,13 @@ namespace BiometricFinger
             len += ioStream.ReadByte();
             byte[] inBuffer = new byte[len];
             ioStream.Read(inBuffer, 0, len);
+            ioStream.Flush();
             Bitmap bmp;
             using (var ms = new MemoryStream(inBuffer))
             {
                 Image image = Image.FromStream(ms);
                 bmp = (Bitmap)image;
+                image.Save("c:\\imagenREMOTO.jpg");
             }
 
             Fingerprint fingerPrint = new Fingerprint();
