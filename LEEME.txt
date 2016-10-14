@@ -1,0 +1,25 @@
+
+Autor: A.Escacena
+Titulo: Visual Studio y Framwork .NET
+--------------------------------------
+
+APLICACIONES:
+	MICROSOFT .NET FRAMEWORK V4.5.2 (14/10/2016)
+	VISUAL STUDIO 2015		(14/10/2016)
+	MySQL				(14/10/2016)
+	
+
+HARDWARE:
+	SecuGen® Hamster™ Pro 20
+
+
+SOFTWARE:
+	C#
+	FDx SDK Pro for Windows 	(14/10/2016)
+	EntityFramework v6.1.3		(14/10/2016)
+	MySQL.DATA V6.9.9		(14/10/2016)
+	MySQL.DATA.Entity v6.9.9	(14/10/2016)
+	SourceAFIS V1.7.0		(14/10/2016)
+
+RIVERS windows 7:
+	wbf_driver_2.3.0.0		(14/10/2016)
