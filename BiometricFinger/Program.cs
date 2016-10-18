@@ -34,7 +34,6 @@ namespace BiometricFinger
             //        Application.Run(new Form1());
 
             server = new Server(8888);
-            //server.OnDataReceived += new ServerHandlePacketData(server_OnDataReceived);
             server.Start();
 
             Console.WriteLine("To exit, type 'exit'");
@@ -55,92 +54,6 @@ namespace BiometricFinger
             Environment.Exit(0);
 
         }
-
-        static void server_OnDataReceived(byte[] data, int bytesRead, TcpClient client, int type)
-        {
-            if(type == 0)
-            {
-                ASCIIEncoding encoder = new ASCIIEncoding();
-                string message = encoder.GetString(data, 0, bytesRead);
-                Console.WriteLine("Received a message: " + message);
-                server.SendImmediateToAll(encoder.GetBytes("Enviado: "+ message + ". Ahora espera a recibir la imagen"));
-            }
-            if(type == 1){
-                ASCIIEncoding encoder = new ASCIIEncoding();
-                string message = encoder.GetString(data, 0, bytesRead);
-                Console.WriteLine("Received a message: " + message);
-                server.SendImmediateToAll(encoder.GetBytes("Enviado: " + message + ". Imagen recibida y comprobada"));
-            }
-        }
-
-       /* private static void ServerThread(object data)
-        {
-            while (true)
-            {
-                using (var context = new db_Entidades()){
-
-                    //PipeSecurity ps = new PipeSecurity();
-                    //Is this okay to do?  Everyone Read/Write?
-                    //PipeAccessRule psRule = new PipeAccessRule("@Everyone", PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow);
-                    //ps.AddAccessRule(psRule);
-                    NamedPipeServerStream pipeServer = new NamedPipeServerStream("testfinger", PipeDirection.InOut, numThreads);
-
-                    int threadId = Thread.CurrentThread.ManagedThreadId;
-                    // Esperar a que un cliente se conecte
-                    pipeServer.WaitForConnection();
-                    Console.WriteLine("Cliente conectado a thread[{0}] .", threadId);
-                    try{
-                        // Leer la solicitud del cliente. Una vez que el cliente ha escrito a la tubería estará disponible.
-                        ComunicacionStream cS = new ComunicacionStream(pipeServer);
-                        cS.enviaCadena("Conectado al servidor");
-
-                        Fingerprint fingerPrint = cS.leeImage();
-                        UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
-                        usuarioABuscar.Fingerprints.Add(fingerPrint);
-
-                        //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
-                        AfisEngine Afis = new AfisEngine();
-                        // Marcamos límite para verificar una huella como encontrada
-                        Afis.Threshold = 100;
-                        Afis.Extract(usuarioABuscar);
-
-                        //Obtenemos los usuarios registrados en la base de datos
-                        var usuariosBBDD = context.Usuario.ToList();
-                        //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
-                        List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
-
-                        foreach (var usuario in usuariosBBDD){
-                            Fingerprint fingerPrintAUX = new Fingerprint();
-                            fingerPrintAUX.AsIsoTemplate = usuario.finger;
-                            UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
-                            usuarioAFIS_AUX.id = usuario.id;
-                            usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
-                            listaUsuariosAFIS.Add(usuarioAFIS_AUX);
-                        }
-                        //Realiza la busqueda 
-                        UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
-                        if (usuarioEncontrado == null){
-                            Console.WriteLine("No se ha encontrado");
-                            cS.enviaCadena("NO IDENTIFICADO");
-                        }
-                        else{
-                            //Obtenemos la puntuación de los usuarios identificados
-                            float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
-                            Usuario usuarioCompleto = usuariosBBDD.Find(x => x.id == usuarioEncontrado.id);
-                            cS.enviaCadena("IDENTIFICADO");
-                            cS.enviaCadena(usuarioCompleto.username);
-                            Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioCompleto.username);
-                        }
-                    }
-                    //Captura IOException si la tubería se rompe o desconecta.
-                    catch (IOException e){
-                        Console.WriteLine("ERROR: {0}", e.Message);
-                    }
-                    //Cerramos la tubería
-                    pipeServer.Close();
-                }
-            }
-        }*/
 
         static void insertaHuellasDesdeCarpeta()
         {

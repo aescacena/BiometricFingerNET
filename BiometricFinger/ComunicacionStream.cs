@@ -56,6 +56,7 @@ namespace BiometricFinger
             len += ioStream.ReadByte();
             byte[] inBuffer = new byte[len];
             ioStream.Read(inBuffer, 0, len);
+            ioStream.Flush();
 
             return streamEncoding.GetString(inBuffer);
         }
@@ -71,11 +72,24 @@ namespace BiometricFinger
         public Fingerprint leeImage()
         {
             int len = 0;
-            
             len = ioStream.ReadByte() * 256;
             len += ioStream.ReadByte();
-            byte[] inBuffer = new byte[len];
-            ioStream.Read(inBuffer, 0, len);
+            byte[] inBuffer = new byte[len];           
+            int aux = 0;
+
+            for (int i = len ; i > 0; i = i - 1024)
+            {
+                if(i < 1024)
+                {
+                    ioStream.Read(inBuffer, aux, i);
+                }
+                else
+                {
+                    ioStream.Read(inBuffer, aux, 1024);
+                    aux += 1024;
+                }
+            }
+
             ioStream.Flush();
             Bitmap bmp;
             using (var ms = new MemoryStream(inBuffer))
