@@ -65,7 +65,7 @@ namespace BiometricFinger
         /// Leer un tipo imagen
         /// </summary>
         /// <remarks>
-        /// Lee un tipo Image enviado desde el cliente mediante una conexión Pipe,
+        /// Lee un tipo Image enviado desde el cliente mediante una conexión TCP,
         /// parar crear FingerPrint con dicha Image.
         /// </remarks>
         /// <returns>Fingerprint</returns>
@@ -103,13 +103,8 @@ namespace BiometricFinger
             fingerPrint.AsBitmap = bmp;
 
             return fingerPrint;
-
-            /*Image image = Image.FromStream(ioStream);
-            Fingerprint fingerPrint = new Fingerprint();
-            fingerPrint.AsBitmap = (Bitmap)image;
-
-            return fingerPrint;*/
         }
+
         public int enviaImagen(Image image)
         {
             byte[] imageData;
