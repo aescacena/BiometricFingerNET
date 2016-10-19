@@ -63,10 +63,10 @@ namespace BiometricFinger
 
         /// <summary>
         /// Comienza a escuchar en el puerto proporcionado al constructor
-        /// </summary>W
+        /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.211"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.184"), port);
             //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
