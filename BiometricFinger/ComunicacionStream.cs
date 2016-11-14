@@ -57,8 +57,8 @@ namespace BiometricFinger
             byte[] inBuffer = new byte[len];
             ioStream.Read(inBuffer, 0, len);
             ioStream.Flush();
-
-            return streamEncoding.GetString(inBuffer);
+            Console.WriteLine("-------------------> "+ Encoding.UTF8.GetString(inBuffer));
+            return Encoding.UTF8.GetString(inBuffer);
         }
 
         /// <summary>
