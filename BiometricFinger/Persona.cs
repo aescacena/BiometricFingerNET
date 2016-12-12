@@ -18,7 +18,7 @@ namespace BiometricFinger
         public int id_personal { get; set; }
         public string nombre { get; set; }
         public string comentario { get; set; }
-        public string isAdmin { get; set; }
+        public string isAdmin { get; set; } //Se ha puesto tipo String por que en base de datos el tipo bit permite NULOS pero en C# la no (HABRÁ QUE CAMBIAR LA BD)
         public byte[] huella1 { get; set; }
         public byte[] huella2 { get; set; }
     }

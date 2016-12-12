@@ -67,7 +67,7 @@ namespace BiometricFinger
         /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.187"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.190"), port);
             //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
