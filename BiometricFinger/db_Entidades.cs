@@ -10,6 +10,6 @@ namespace BiometricFinger
     public partial class db_Entidades : DbContext
     {
         public db_Entidades() : base(nameOrConnectionString: "MonkeyFist") { }
-        public DbSet<Usuario> Usuario { get; set; }
+        public DbSet<Persona> Usuario { get; set; }
     }
 }

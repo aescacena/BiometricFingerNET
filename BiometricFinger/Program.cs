@@ -61,7 +61,7 @@ namespace BiometricFinger
             //DirectoryInfo di = new DirectoryInfo(@"C:\Users\PC_STE_19\Documents\Visual Studio 2015\Projects\BiometricFinger\images");
             DirectoryInfo di = new DirectoryInfo(@"C:\Users\PC_STE_19\Desktop\DEDOS_ESCACENA");
             Console.WriteLine("No search pattern returns:");
-            List<Usuario> usuarios = new List<Usuario>();
+            List<Persona> usuarios = new List<Persona>();
             using (var context = new db_Entidades())
             {
                 foreach (var fi in di.GetFiles())
@@ -71,12 +71,12 @@ namespace BiometricFinger
                     Bitmap image1 = (Bitmap)Image.FromFile(@"C:\Users\PC_STE_19\Desktop\DEDOS_ESCACENA\" + fi.Name, true);
                     Fingerprint f = new Fingerprint();
                     f.AsBitmap = image1;
-                    Usuario usu = new Usuario();
+                    Persona usu = new Persona();
                     Person persona = new Person();
                     persona.Fingerprints.Add(f);
                     Afis.Extract(persona);
-                    usu.username = fi.Name;
-                    usu.finger = f.AsIsoTemplate;
+                    usu.nombre = fi.Name;
+                    usu.huella1 = f.AsIsoTemplate;
                     usuarios.Add(usu);
                     Console.WriteLine(fi.Name);
                     context.Usuario.Add(usu);

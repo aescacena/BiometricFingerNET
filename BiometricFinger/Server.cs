@@ -56,6 +56,7 @@ namespace BiometricFinger
         /// <param name="port"></param>
         public Server(int port)
         {
+
             this.port = port;
             clientBuffers = new ConcurrentDictionary<TcpClient, NetworkBuffer>();
             clients = new List<TcpClient>();
@@ -143,11 +144,11 @@ namespace BiometricFinger
                             Console.WriteLine("Recibe imagen de huella dactilar");
                             fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
                             Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
-                            Usuario usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
+                            Persona usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
                             //cS.enviaUsuario(usuarioVerificado);
 
                             if (usuarioVerificado != null){  //Huella verificada
-                                cS.enviaCadena("ID: " + usuarioVerificado.id + ", Nombre: " + usuarioVerificado.username);  //Se envía al cliente usuario correspondiente a la huella verificada
+                                cS.enviaCadena("ID: " + usuarioVerificado.id_personal + ", Nombre: " + usuarioVerificado.nombre);  //Se envía al cliente usuario correspondiente a la huella verificada
                                 estado = "RECIBE_OPERACION";    //Al verificar el usuario correctamente, la maquina pasa al estado RECIBE_OPERACIÓN
                             }
                             else{   //Huella no verificada
@@ -313,9 +314,9 @@ namespace BiometricFinger
             }
         }
 
-        private Usuario verificaHuella(Fingerprint fingerPrint)
+        private Persona verificaHuella(Fingerprint fingerPrint)
         {
-            Usuario usuarioVerificado = null;
+            Persona usuarioVerificado = null;
 
             using (var context = new db_Entidades())
             {
@@ -336,9 +337,9 @@ namespace BiometricFinger
                 foreach (var usuario in usuariosBBDD)
                 {
                     Fingerprint fingerPrintAUX = new Fingerprint();
-                    fingerPrintAUX.AsIsoTemplate = usuario.finger;
+                    fingerPrintAUX.AsIsoTemplate = usuario.huella1;
                     UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
-                    usuarioAFIS_AUX.id = usuario.id;
+                    usuarioAFIS_AUX.id = usuario.id_personal;
                     usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
                     listaUsuariosAFIS.Add(usuarioAFIS_AUX);
                 }
@@ -354,10 +355,10 @@ namespace BiometricFinger
                 {
                     //Obtenemos la puntuación de los usuarios identificados
                     float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
-                    usuarioVerificado = usuariosBBDD.Find(x => x.id == usuarioEncontrado.id);
+                    usuarioVerificado = usuariosBBDD.Find(x => x.id_personal == usuarioEncontrado.id);
                     //cS.enviaCadena("IDENTIFICADO");
                     //cS.enviaCadena(usuarioCompleto.username);
-                    Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.username);
+                    Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.nombre);
                 }
             }
             return usuarioVerificado;

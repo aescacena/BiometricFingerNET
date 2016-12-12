@@ -11,14 +11,14 @@ namespace BiometricFinger
 {
     [Serializable]
     [Table("personal")]
-    public class Usuario
+    public class Persona
     {
         [Key]
         [Column("id_personal")]
         public int id_personal { get; set; }
         public string nombre { get; set; }
         public string comentario { get; set; }
-        public bool isAdmin { get; set; }
+        public string isAdmin { get; set; }
         public byte[] huella1 { get; set; }
         public byte[] huella2 { get; set; }
     }
