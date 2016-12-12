@@ -66,7 +66,7 @@ namespace BiometricFinger
         /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.186"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.187"), port);
             //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
@@ -130,7 +130,7 @@ namespace BiometricFinger
             
             Fingerprint fingerPrint = null;
             Boolean clienteConectado = true;
-            string estado = "INICIAL";
+            string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
 
             while (started)
             {
@@ -141,18 +141,18 @@ namespace BiometricFinger
                         case "VERIFICA_HUELLA":
                             //bloquea hasta que un cliente envía imagen de dedo
                             Console.WriteLine("Recibe imagen de huella dactilar");
-                            fingerPrint = cS.leeImage();
+                            fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
                             Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
-                            Usuario usuarioVerificado = verificaHuella(fingerPrint);
+                            Usuario usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
                             //cS.enviaUsuario(usuarioVerificado);
-                            if (usuarioVerificado != null)
-                            {
-                                cS.enviaCadena("ID: " + usuarioVerificado.id + ", Nombre: " + usuarioVerificado.username);
+
+                            if (usuarioVerificado != null){  //Huella verificada
+                                cS.enviaCadena("ID: " + usuarioVerificado.id + ", Nombre: " + usuarioVerificado.username);  //Se envía al cliente usuario correspondiente a la huella verificada
+                                estado = "RECIBE_OPERACION";    //Al verificar el usuario correctamente, la maquina pasa al estado RECIBE_OPERACIÓN
                             }
-                            else
-                            {
-                                cS.enviaCadena("NO VERIFICADO");
-                                estado = "";
+                            else{   //Huella no verificada
+                                cS.enviaCadena("NO VERIFICADO");    //Se envía al usuario que la huella no ha sido verificada
+                                estado = "";    //Pasamos al estado por defecto
                             }
                             break;
                         case "RECIBE_OPERACION":
