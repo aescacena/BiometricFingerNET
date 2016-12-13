@@ -79,7 +79,7 @@ namespace BiometricFinger
                     usu.huella1 = f.AsIsoTemplate;
                     usuarios.Add(usu);
                     Console.WriteLine(fi.Name);
-                    context.Usuario.Add(usu);
+                    context.Personal.Add(usu);
                 }
                 context.SaveChanges();
             }
