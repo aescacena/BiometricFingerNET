@@ -122,7 +122,7 @@ namespace BiometricFinger
             return 1;
         }
 
-        public int enviaUsuario(Usuario usuarioVerificado)
+        public int enviaUsuario(Persona usuarioVerificado)
         {
             BinaryFormatter formatter = new BinaryFormatter();
             try

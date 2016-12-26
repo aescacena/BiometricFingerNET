@@ -8,6 +8,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using SourceAFIS.Simple;
 using static BiometricFinger.Program;
+using System.Data.Entity;
 
 namespace BiometricFinger
 {
@@ -56,6 +57,7 @@ namespace BiometricFinger
         /// <param name="port"></param>
         public Server(int port)
         {
+
             this.port = port;
             clientBuffers = new ConcurrentDictionary<TcpClient, NetworkBuffer>();
             clients = new List<TcpClient>();
@@ -66,7 +68,7 @@ namespace BiometricFinger
         /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.187"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.190"), port);
             //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
@@ -127,8 +129,6 @@ namespace BiometricFinger
                 return;
             }
             ComunicacionStream cS = new ComunicacionStream(tcpClient.GetStream());
-            
-            Fingerprint fingerPrint = null;
             Boolean clienteConectado = true;
             string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
 
@@ -139,28 +139,17 @@ namespace BiometricFinger
                     switch (estado)
                     {
                         case "VERIFICA_HUELLA":
-                            //bloquea hasta que un cliente envía imagen de dedo
-                            Console.WriteLine("Recibe imagen de huella dactilar");
-                            fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
-                            Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
-                            Usuario usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
-                            //cS.enviaUsuario(usuarioVerificado);
-
-                            if (usuarioVerificado != null){  //Huella verificada
-                                cS.enviaCadena("ID: " + usuarioVerificado.id + ", Nombre: " + usuarioVerificado.username);  //Se envía al cliente usuario correspondiente a la huella verificada
-                                estado = "RECIBE_OPERACION";    //Al verificar el usuario correctamente, la maquina pasa al estado RECIBE_OPERACIÓN
-                            }
-                            else{   //Huella no verificada
-                                cS.enviaCadena("NO VERIFICADO");    //Se envía al usuario que la huella no ha sido verificada
-                                estado = "";    //Pasamos al estado por defecto
-                            }
+                            if (verificaPersona(cS))
+                                cS.enviaCadena("PERSONA OK");
+                            else
+                                cS.enviaCadena("PERSONA ERROR");
+                            estado = "FIN";
                             break;
-                        case "RECIBE_OPERACION":
-                            Console.WriteLine("Espera la operación a realizar por operario. (Entrada/Salida/CambiarTarea)");
-                            cS.limpiar();
-                            string operacionOperario = cS.leeCadena();
-                            Console.WriteLine(operacionOperario);
-                            cS.enviaCadena("Operación registrada");
+                        case "INSERTA_HUELLA":
+                            if (insertaHuella(cS))
+                                cS.enviaCadena("VERIFICA HUELLA OK");
+                            else
+                                cS.enviaCadena("VERIFICA HUELLA ERROR");
                             estado = "FIN";
                             break;
                         case "FIN":
@@ -197,6 +186,210 @@ namespace BiometricFinger
             }
 
             DisconnectClient(tcpClient);
+        }
+
+        private bool verificaPersona(ComunicacionStream cS)
+        {
+            bool result = false;
+            bool started = false;
+            string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
+            Fingerprint fingerPrint = null;
+
+            while (started)
+            {
+                try
+                {
+                    switch (estado)
+                    {
+                        case "VERIFICA_HUELLA":
+                            //bloquea hasta que un cliente envía imagen de dedo
+                            Console.WriteLine("Recibe imagen de huella dactilar");
+                            fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
+                            Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
+                            Persona usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
+                            //cS.enviaUsuario(usuarioVerificado);
+
+                            if (usuarioVerificado != null)
+                            {  //Huella verificada
+                                cS.enviaCadena("ID: " + usuarioVerificado.id_personal + ", Nombre: " + usuarioVerificado.nombre);  //Se envía al cliente usuario correspondiente a la huella verificada
+                                estado = "RECIBE_OPERACION";    //Al verificar el usuario correctamente, la maquina pasa al estado RECIBE_OPERACIÓN
+                            }
+                            else
+                            {   //Huella no verificada
+                                cS.enviaCadena("NO VERIFICADO");    //Se envía al usuario que la huella no ha sido verificada
+                                estado = "";    //Pasamos al estado por defecto
+                            }
+                            break;
+                        case "RECIBE_OPERACION":
+                            Console.WriteLine("Espera la operación a realizar por operario. (Entrada/Salida/CambiarTarea)");
+                            cS.limpiar();
+                            string operacionOperario = cS.leeCadena();
+                            Console.WriteLine(operacionOperario);
+                            cS.enviaCadena("Operación registrada");
+                            estado = "FIN";
+                            break;
+                        case "FIN":
+                            //cS.enviaCadena("Cierre de conexión");
+                            //started = false;
+                            result = true;
+                            //clienteConectado = false;
+                            break;
+                        default:
+                            //Console.WriteLine("Default case");
+                            cS.limpiar();
+                            estado = cS.leeCadena();
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    //Se ha producido un error de socket
+                    Console.WriteLine("Un error de socket ha ocurrido con el cliente");
+                    break;
+                }
+                Thread.Sleep(15);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// MAQUINA DE ESTADOS: Inserta la huella recibida a el usuario indicado por el cliente.
+        /// </summary>
+        /// <param name="cS">Comunicación entre Servidor/Cliente</param>
+        private bool insertaHuella(ComunicacionStream cS)
+        {
+            bool result = false;
+            string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
+            bool started = true;
+            Fingerprint fingerPrint = null; //Huella recibida a insertar/actualizar
+            Persona persona = null; //Persona a insertar/actualizar huella
+            DAO DAO = new DAO();    //Data Access Objet, objeto de acceso a base de datos
+
+            while (started)
+            {
+                try
+                {
+                    switch (estado)
+                    {
+                        case "RECIBE_PERSONA":
+                            //bloquea hasta que un cliente envía cadena
+                            Console.WriteLine("Recibe identificador de la persona");
+                            cS.limpiar();
+                            string cadenaRecibida = cS.leeCadena(); //Debe recibir identificador y huella a insertar/actualizar (AÚN NO SE SI TIPO JSON)
+                            Console.WriteLine("Identificador recibido, comprueba si el identificador corresponde en BBBDD");
+                            Console.WriteLine("La cadena recibida es:"+ cadenaRecibida);
+                            persona = DAO.getPersona(610);    //Llama a la función para realizar la búsqueda de la persona
+
+                            if (persona != null)
+                            {  //Huella verificada
+                                cS.enviaCadena("ID: " + persona.id_personal + ", Nombre: " + persona.nombre);  //Se envía al cliente la persona encontrada con ese id
+                                estado = "RECIBE_HUELLA";    //Al verificar la persona correctamente, la maquina pasa al estado RECIBE_HUELLA
+                            }
+                            else
+                            {   //Huella no verificada
+                                cS.enviaCadena("NO ENCONTRADO");    //Se envía al usuario que la persona no ha sido encontrada
+                                estado = "";    //Pasamos al estado por defecto
+                                started = false;    //Colocamos a false el started para que termine la maquina de estado
+                            }
+                            break;
+
+                        case "RECIBE_HUELLA":
+                            //bloquea hasta que un cliente envía imagen de dedo
+                            Console.WriteLine("Recibe imagen de huella dactilar");
+                            fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
+                            Console.WriteLine("Imagen recibida");
+                            estado = "INSERTA_HUELLA_PERSONA";                 
+                            break;
+
+                        case "INSERTA_HUELLA_PERSONA":
+                            bool operacionOK = DAO.insertaHuella(persona.id_personal, fingerPrint.AsImageData, 1); //Realizamos la actualización de la huella en BBDD (HAY QUE INDICAR QUE HUELLA ACTUALIZAR)
+
+                            if (operacionOK){  //Huella verificada
+                                cS.enviaCadena("OPERACION OK");  //Se envía al cliente el OK de operación realizada
+                                Console.WriteLine("INSERTA_HUELLA_PERSONA -> OK");
+                                estado = "FIN";
+                            }
+                            else{   //Huella no verificada
+                                cS.enviaCadena("OPERACION NO OK");    //Se envía el NO OK de operación realizada
+                                estado = "";    //Pasamos al estado por defecto
+                                Console.WriteLine("INSERTA_HUELLA_PERSONA -> NO OK");
+                            }
+                            break;
+
+                        case "FIN":
+                            cS.enviaCadena("FIN INSERTA HUELLA");
+                            started = false;    //Colocamos started a false para finalizar la maquina de estados
+                            result = true;
+                            break;
+
+                        default:
+                            Console.WriteLine("ESTADO POR DEFECTO");
+                            cS.limpiar();
+                            estado = cS.leeCadena();
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    //Se ha producido un error de socket
+                    Console.WriteLine("Un error de socket ha ocurrido con el cliente");
+                    break;
+                }
+
+                Thread.Sleep(15);
+            }
+
+            return result;
+        }
+
+        private Persona verificaHuella(Fingerprint fingerPrint)
+        {
+            Persona usuarioVerificado = null;
+
+            using (var context = new db_Entidades())
+            {
+                UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
+                usuarioABuscar.Fingerprints.Add(fingerPrint);
+
+                //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
+                AfisEngine Afis = new AfisEngine();
+                // Marcamos límite para verificar una huella como encontrada
+                Afis.Threshold = 50;
+                Afis.Extract(usuarioABuscar);
+
+                //Obtenemos los usuarios registrados en la base de datos
+                var usuariosBBDD = context.Personal.ToList();
+                //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
+                List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
+
+                foreach (var usuario in usuariosBBDD)
+                {
+                    Fingerprint fingerPrintAUX = new Fingerprint();
+                    fingerPrintAUX.AsIsoTemplate = usuario.huella1;
+                    UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                    usuarioAFIS_AUX.id = usuario.id_personal;
+                    usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
+                    listaUsuariosAFIS.Add(usuarioAFIS_AUX);
+                }
+                //Realiza la busqueda 
+                UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
+                if (usuarioEncontrado == null)
+                {
+                    Console.WriteLine("No se ha encontrado");
+                    //cS.enviaCadena("NO IDENTIFICADO");
+                    usuarioVerificado = null;
+                }
+                else
+                {
+                    //Obtenemos la puntuación de los usuarios identificados
+                    float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
+                    usuarioVerificado = usuariosBBDD.Find(x => x.id_personal == usuarioEncontrado.id);
+                    //cS.enviaCadena("IDENTIFICADO");
+                    //cS.enviaCadena(usuarioCompleto.username);
+                    Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.nombre);
+                }
+            }
+            return usuarioVerificado;
         }
 
         /// <summary>
@@ -311,56 +504,6 @@ namespace BiometricFinger
                     FlushData(client);
                 }
             }
-        }
-
-        private Usuario verificaHuella(Fingerprint fingerPrint)
-        {
-            Usuario usuarioVerificado = null;
-
-            using (var context = new db_Entidades())
-            {
-                UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
-                usuarioABuscar.Fingerprints.Add(fingerPrint);
-
-                //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
-                AfisEngine Afis = new AfisEngine();
-                // Marcamos límite para verificar una huella como encontrada
-                Afis.Threshold = 50;
-                Afis.Extract(usuarioABuscar);
-
-                //Obtenemos los usuarios registrados en la base de datos
-                var usuariosBBDD = context.Usuario.ToList();
-                //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
-                List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
-
-                foreach (var usuario in usuariosBBDD)
-                {
-                    Fingerprint fingerPrintAUX = new Fingerprint();
-                    fingerPrintAUX.AsIsoTemplate = usuario.finger;
-                    UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
-                    usuarioAFIS_AUX.id = usuario.id;
-                    usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
-                    listaUsuariosAFIS.Add(usuarioAFIS_AUX);
-                }
-                //Realiza la busqueda 
-                UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
-                if (usuarioEncontrado == null)
-                {
-                    Console.WriteLine("No se ha encontrado");
-                    //cS.enviaCadena("NO IDENTIFICADO");
-                    usuarioVerificado = null;
-                }
-                else
-                {
-                    //Obtenemos la puntuación de los usuarios identificados
-                    float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
-                    usuarioVerificado = usuariosBBDD.Find(x => x.id == usuarioEncontrado.id);
-                    //cS.enviaCadena("IDENTIFICADO");
-                    //cS.enviaCadena(usuarioCompleto.username);
-                    Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.username);
-                }
-            }
-            return usuarioVerificado;
         }
     }
 }
