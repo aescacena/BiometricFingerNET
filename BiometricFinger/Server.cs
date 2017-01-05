@@ -68,7 +68,7 @@ namespace BiometricFinger
         /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.190"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.202"), port);
             //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
             Console.WriteLine("Started server on port " + port);
 
@@ -139,10 +139,7 @@ namespace BiometricFinger
                     switch (estado)
                     {
                         case "VERIFICA_HUELLA":
-                            if (verificaPersona(cS))
-                                cS.enviaCadena("PERSONA OK");
-                            else
-                                cS.enviaCadena("PERSONA ERROR");
+                            verificaPersona(cS);
                             estado = "FIN";
                             break;
                         case "INSERTA_HUELLA":
@@ -191,9 +188,10 @@ namespace BiometricFinger
         private bool verificaPersona(ComunicacionStream cS)
         {
             bool result = false;
-            bool started = false;
-            string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
+            bool started = true;   //COLOCAR A TRUE, SI NO NO ENTRA EN EL WHILE Y NO REALIZA NINGUNA COMPROBACIÓN U OPERACIÓN
+            string estado = "VERIFICA_HUELLA";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
             Fingerprint fingerPrint = null;
+            Persona usuarioVerificado = null;
 
             while (started)
             {
@@ -206,38 +204,24 @@ namespace BiometricFinger
                             Console.WriteLine("Recibe imagen de huella dactilar");
                             fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
                             Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
-                            Persona usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
+                            usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
                             //cS.enviaUsuario(usuarioVerificado);
-
-                            if (usuarioVerificado != null)
-                            {  //Huella verificada
-                                cS.enviaCadena("ID: " + usuarioVerificado.id_personal + ", Nombre: " + usuarioVerificado.nombre);  //Se envía al cliente usuario correspondiente a la huella verificada
-                                estado = "RECIBE_OPERACION";    //Al verificar el usuario correctamente, la maquina pasa al estado RECIBE_OPERACIÓN
-                            }
-                            else
-                            {   //Huella no verificada
-                                cS.enviaCadena("NO VERIFICADO");    //Se envía al usuario que la huella no ha sido verificada
-                                estado = "";    //Pasamos al estado por defecto
-                            }
                             break;
-                        case "RECIBE_OPERACION":
-                            Console.WriteLine("Espera la operación a realizar por operario. (Entrada/Salida/CambiarTarea)");
-                            cS.limpiar();
-                            string operacionOperario = cS.leeCadena();
-                            Console.WriteLine(operacionOperario);
-                            cS.enviaCadena("Operación registrada");
+                        case "ENVIA_PERSONA":
+                            if (usuarioVerificado != null)  //Huella verificada
+                                cS.enviaCadena(usuarioVerificado.id_personal + "");  //Se envía al cliente id_personal correspondiente a la huella verificada
+                            else   //Huella no verificada
+                                cS.enviaCadena("NO VERIFICADO");    //Se envía al usuario que la huella no ha sido verificada
+
                             estado = "FIN";
                             break;
                         case "FIN":
-                            //cS.enviaCadena("Cierre de conexión");
-                            //started = false;
                             result = true;
-                            //clienteConectado = false;
                             break;
                         default:
                             //Console.WriteLine("Default case");
                             cS.limpiar();
-                            estado = cS.leeCadena();
+                            //estado = cS.leeCadena();
                             break;
                     }
                 }
@@ -259,7 +243,7 @@ namespace BiometricFinger
         private bool insertaHuella(ComunicacionStream cS)
         {
             bool result = false;
-            string estado = "INICIAL";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
+            string estado = "RECIBE_PERSONA";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
             bool started = true;
             Fingerprint fingerPrint = null; //Huella recibida a insertar/actualizar
             Persona persona = null; //Persona a insertar/actualizar huella
@@ -278,7 +262,7 @@ namespace BiometricFinger
                             string cadenaRecibida = cS.leeCadena(); //Debe recibir identificador y huella a insertar/actualizar (AÚN NO SE SI TIPO JSON)
                             Console.WriteLine("Identificador recibido, comprueba si el identificador corresponde en BBBDD");
                             Console.WriteLine("La cadena recibida es:"+ cadenaRecibida);
-                            persona = DAO.getPersona(610);    //Llama a la función para realizar la búsqueda de la persona
+                            persona = DAO.getPersona(Int32.Parse(cadenaRecibida));    //Llama a la función para realizar la búsqueda de la persona
 
                             if (persona != null)
                             {  //Huella verificada
