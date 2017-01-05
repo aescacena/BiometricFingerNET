@@ -143,10 +143,7 @@ namespace BiometricFinger
                             estado = "FIN";
                             break;
                         case "INSERTA_HUELLA":
-                            if (insertaHuella(cS))
-                                cS.enviaCadena("VERIFICA HUELLA OK");
-                            else
-                                cS.enviaCadena("VERIFICA HUELLA ERROR");
+                            insertaHuella(cS);
                             estado = "FIN";
                             break;
                         case "FIN":
@@ -288,22 +285,23 @@ namespace BiometricFinger
                         case "INSERTA_HUELLA_PERSONA":
                             bool operacionOK = DAO.insertaHuella(persona.id_personal, fingerPrint.AsImageData, 1); //Realizamos la actualización de la huella en BBDD (HAY QUE INDICAR QUE HUELLA ACTUALIZAR)
 
-                            if (operacionOK){  //Huella verificada
-                                cS.enviaCadena("OPERACION OK");  //Se envía al cliente el OK de operación realizada
-                                Console.WriteLine("INSERTA_HUELLA_PERSONA -> OK");
-                                estado = "FIN";
+                            if (!operacionOK)   //Huella no verificada
+                            {
+                                cS.enviaCadena("ERROR");
+                                result = false;
                             }
-                            else{   //Huella no verificada
-                                cS.enviaCadena("OPERACION NO OK");    //Se envía el NO OK de operación realizada
-                                estado = "";    //Pasamos al estado por defecto
-                                Console.WriteLine("INSERTA_HUELLA_PERSONA -> NO OK");
+                            else //Huella insertada con exito
+                            {
+                                cS.enviaCadena("OK");
                             }
+
+                            estado = "FIN";
                             break;
 
                         case "FIN":
-                            cS.enviaCadena("FIN INSERTA HUELLA");
+                            //cS.enviaCadena("FIN INSERTA HUELLA");
                             started = false;    //Colocamos started a false para finalizar la maquina de estados
-                            result = true;
+                            //result = true;
                             break;
 
                         default:
