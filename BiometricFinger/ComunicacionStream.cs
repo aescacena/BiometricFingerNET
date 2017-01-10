@@ -36,7 +36,8 @@ namespace BiometricFinger
         /// <returns>int</returns>
         public int enviaCadena(string outString)
         {
-            byte[] outBuffer = streamEncoding.GetBytes(outString);
+            //byte[] outBuffer = streamEncoding.GetBytes(outString);    //Comentado por que al recoger la matríz de Bytes añade bytes de más
+            byte[] outBuffer = Encoding.UTF8.GetBytes(outString);
             int len = outBuffer.Length;
             if (len > UInt16.MaxValue)
             {

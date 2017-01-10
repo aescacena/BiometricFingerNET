@@ -122,6 +122,7 @@ namespace BiometricFinger
         private void WorkWithClient(object client)
         {
             TcpClient tcpClient = client as TcpClient;
+            bool started = true;
             if (tcpClient == null)
             {
                 Console.WriteLine("TCP cliente es nulo, detener el procesamiento de este cliente");
@@ -148,7 +149,7 @@ namespace BiometricFinger
                             break;
                         case "FIN":
                             //cS.enviaCadena("Cierre de conexión");
-                            //started = false;
+                            started = false;
                             clienteConectado = false;
                             break;
                         default:
@@ -202,7 +203,13 @@ namespace BiometricFinger
                             fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
                             Console.WriteLine("Imagen recibida, comprueba si huella corresponde con alguna en BBBDD");
                             usuarioVerificado = verificaHuella(fingerPrint);    //Llama a la función para realizar la verificación de la huella
-                            //cS.enviaUsuario(usuarioVerificado);
+                            Console.WriteLine("-------> ENVIA CADENA A CLIENTE");
+                            if (usuarioVerificado.nombre != null)
+                                //cS.enviaUsuario(usuarioVerificado);
+                                cS.enviaCadena(usuarioVerificado.id_personal.ToString());
+                            else
+                                cS.enviaCadena("NO VERIFICADO");
+                            estado = "FIN";
                             break;
                         case "ENVIA_PERSONA":
                             if (usuarioVerificado != null)  //Huella verificada
@@ -213,6 +220,7 @@ namespace BiometricFinger
                             estado = "FIN";
                             break;
                         case "FIN":
+                            started = false;
                             result = true;
                             break;
                         default:
@@ -347,11 +355,15 @@ namespace BiometricFinger
                 foreach (var usuario in usuariosBBDD)
                 {
                     Fingerprint fingerPrintAUX = new Fingerprint();
-                    fingerPrintAUX.AsIsoTemplate = usuario.huella1;
-                    UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
-                    usuarioAFIS_AUX.id = usuario.id_personal;
-                    usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
-                    listaUsuariosAFIS.Add(usuarioAFIS_AUX);
+                    if (usuario.huella1 != null)
+                    {
+                        fingerPrintAUX.AsImageData = usuario.huella1;
+                        UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                        usuarioAFIS_AUX.id = usuario.id_personal;
+                        usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
+                        Afis.Extract(usuarioAFIS_AUX);
+                        listaUsuariosAFIS.Add(usuarioAFIS_AUX);
+                    }
                 }
                 //Realiza la busqueda 
                 UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
