@@ -251,6 +251,7 @@ namespace BiometricFinger
             string estado = "RECIBE_PERSONA";  //Estado en el cual comienza la maquina de estado (de momento, caso es el estado por defecto)
             bool started = true;
             Fingerprint fingerPrint = null; //Huella recibida a insertar/actualizar
+            int huellaUNO_o_DOS = 0;        //Para identificar que huella insertar en BBDD.
             Persona persona = null; //Persona a insertar/actualizar huella
             DAO DAO = new DAO();    //Data Access Objet, objeto de acceso a base de datos
 
@@ -271,29 +272,29 @@ namespace BiometricFinger
 
                             if (persona != null)
                             {  //Huella verificada
-                                cS.enviaCadena("ID: " + persona.id_personal + ", Nombre: " + persona.nombre);  //Se envía al cliente la persona encontrada con ese id
+                                //cS.enviaCadena("ID: " + persona.id_personal + ", Nombre: " + persona.nombre);  //Se envía al cliente la persona encontrada con ese id
                                 estado = "RECIBE_HUELLA";    //Al verificar la persona correctamente, la maquina pasa al estado RECIBE_HUELLA
                             }
                             else
                             {   //Huella no verificada
-                                cS.enviaCadena("NO ENCONTRADO");    //Se envía al usuario que la persona no ha sido encontrada
-                                estado = "";    //Pasamos al estado por defecto
-                                started = false;    //Colocamos a false el started para que termine la maquina de estado
+                                cS.enviaCadena("ERROR");    //Se envía al usuario que la persona no ha sido encontrada
+                                estado = "";                //Pasamos al estado por defecto
+                                started = false;            //Colocamos a false el started para que termine la maquina de estado
                             }
                             break;
 
                         case "RECIBE_HUELLA":
-                            //bloquea hasta que un cliente envía imagen de dedo
                             Console.WriteLine("Recibe imagen de huella dactilar");
-                            fingerPrint = cS.leeImage();    //Recoge la imagen enviada por el cliente
-                            Console.WriteLine("Imagen recibida");
+                            huellaUNO_o_DOS = Int32.Parse(cS.leeCadena());  //Recogemos que huella se insertará
+                            fingerPrint = cS.leeImage();                    //Recoge la imagen enviada por el cliente
+                            Console.WriteLine("Imagen recibida de huella "+huellaUNO_o_DOS);
                             estado = "INSERTA_HUELLA_PERSONA";                 
                             break;
 
                         case "INSERTA_HUELLA_PERSONA":
-                            bool operacionOK = DAO.insertaHuella(persona.id_personal, fingerPrint.AsImageData, 1); //Realizamos la actualización de la huella en BBDD (HAY QUE INDICAR QUE HUELLA ACTUALIZAR)
+                            bool operacionOK = DAO.insertaHuella(persona.id_personal, fingerPrint.AsImageData, huellaUNO_o_DOS); //Realizamos la actualización de la huella en BBDD
 
-                            if (!operacionOK)   //Huella no verificada
+                            if (!operacionOK)   //Error al insertar
                             {
                                 cS.enviaCadena("ERROR");
                                 result = false;
@@ -354,10 +355,21 @@ namespace BiometricFinger
 
                 foreach (var usuario in usuariosBBDD)
                 {
-                    Fingerprint fingerPrintAUX = new Fingerprint();
+                    Fingerprint fingerPrintAUX;
                     if (usuario.huella1 != null)
                     {
+                        fingerPrintAUX = new Fingerprint();
                         fingerPrintAUX.AsImageData = usuario.huella1;
+                        UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
+                        usuarioAFIS_AUX.id = usuario.id_personal;
+                        usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
+                        Afis.Extract(usuarioAFIS_AUX);
+                        listaUsuariosAFIS.Add(usuarioAFIS_AUX);
+                    }
+                    if(usuario.huella2 != null)
+                    {
+                        fingerPrintAUX = new Fingerprint();
+                        fingerPrintAUX.AsImageData = usuario.huella2;
                         UsuarioAFIS usuarioAFIS_AUX = new UsuarioAFIS();
                         usuarioAFIS_AUX.id = usuario.id_personal;
                         usuarioAFIS_AUX.Fingerprints.Add(fingerPrintAUX);
