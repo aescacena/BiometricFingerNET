@@ -11,12 +11,6 @@ DESCRIPCIÓN DE IDEAS Y TAREAS A REALIZAR
 	Posible solución:
 		- MQTT o RabbitMQ
 
-- Recoger niveles de comparación de huellas para sacar estadísticas y nivelar bien el nivel de comprobación de huellas.
-	
-	Posible solución:
-		- Recoger esta información en la base de datos de todo aquel que inserte la huella ya quede verificado
-		  o no.
-
 ------------------------------------------------------------------------------------------------------------------------
 TAREAS SECUNDARIAS A REALIZAR
 ------------------------------------------------------------------------------------------------------------------------
@@ -44,6 +38,15 @@ TAREAS REALIZADAS
 	Solución adquirida: Las huellas son almacenadas con el nombre de FECHA(dia-mes-año)_HORA(horas-minutos-segundos).jpg
 		en c:\Huellas\
 
+- Recoger niveles de comparación de huellas para sacar estadísticas y nivelar bien el nivel de comprobación de huellas.
+	
+	Posible solución:
+		- Recoger esta información en la base de datos de todo aquel que inserte la huella ya quede verificado
+		  o no.
+
+	Solución adquirida:
+		- Se ha creado una nueva tabla en BBDD (estadoComparacion) donde recogemos el id_personal y puntuación de
+		  los operarios verificados satifactoriamente.
 ------------------------------------------------------------------------------------------------------------------------
 PROBLEMAS SOLUCIONADOS
 -------------------------------------------------------------------------------------------------------------------------

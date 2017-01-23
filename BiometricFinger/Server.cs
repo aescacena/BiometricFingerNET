@@ -336,22 +336,19 @@ namespace BiometricFinger
         private Persona verificaHuella(Fingerprint fingerPrint)
         {
             Persona usuarioVerificado = null;
+            DAO DAO = new DAO();    //Data Access Objet, objeto de acceso a base de datos
 
             using (var context = new db_Entidades())
             {
                 UsuarioAFIS usuarioABuscar = new UsuarioAFIS();
                 usuarioABuscar.Fingerprints.Add(fingerPrint);
-
-                //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
-                AfisEngine Afis = new AfisEngine();
-                // Marcamos límite para verificar una huella como encontrada
-                Afis.Threshold = 40; //Niveles provados por orden: 50;
+                
+                AfisEngine Afis = new AfisEngine(); //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios
+                Afis.Threshold = 40;                // Marcamos límite para verificar una huella como encontrada //Niveles provados por orden: 50;
                 Afis.Extract(usuarioABuscar);
-
-                //Obtenemos los usuarios registrados en la base de datos
-                var usuariosBBDD = context.Personal.ToList();
-                //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
-                List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();
+               
+                var usuariosBBDD = context.Personal.ToList();                   //Obtenemos los usuarios registrados en la base de datos
+                List<UsuarioAFIS> listaUsuariosAFIS = new List<UsuarioAFIS>();  //Lista de tipo UsuarioAFIS, los cuales rellenamos con plantillas de huellas dactilares e id de usuario de la base de datos
 
                 foreach (var usuario in usuariosBBDD)
                 {
@@ -377,21 +374,18 @@ namespace BiometricFinger
                         listaUsuariosAFIS.Add(usuarioAFIS_AUX);
                     }
                 }
-                //Realiza la busqueda 
-                UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;
+
+                UsuarioAFIS usuarioEncontrado = Afis.Identify(usuarioABuscar, listaUsuariosAFIS).FirstOrDefault() as UsuarioAFIS;   //Realiza la busqueda 
                 if (usuarioEncontrado == null)
                 {
                     Console.WriteLine("No se ha encontrado");
-                    //cS.enviaCadena("NO IDENTIFICADO");
                     usuarioVerificado = null;
                 }
                 else
                 {
-                    //Obtenemos la puntuación de los usuarios identificados
-                    float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);
-                    usuarioVerificado = usuariosBBDD.Find(x => x.id_personal == usuarioEncontrado.id);
-                    //cS.enviaCadena("IDENTIFICADO");
-                    //cS.enviaCadena(usuarioCompleto.username);
+                    float puntuacion = Afis.Verify(usuarioABuscar, usuarioEncontrado);                  //Obtenemos la puntuación de los usuarios identificados
+                    usuarioVerificado = usuariosBBDD.Find(x => x.id_personal == usuarioEncontrado.id);  //Obtenemos el operario correspondiente a la verificación de huella
+                    DAO.insertaEstadoComparacion(usuarioVerificado.id_personal, puntuacion);            //Insertamos en BBDD la puntuación obtenida en la comparación
                     Console.WriteLine("Encontrado con: {0:F3}, Nombre: {1}", puntuacion, usuarioVerificado.nombre);
                 }
             }

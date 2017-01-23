@@ -90,6 +90,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DAO\Modelo\EstadoComparacion.cs" />
     <Compile Include="Utils\ComunicacionStream.cs" />
     <Compile Include="DAO\DAO.cs" />
     <Compile Include="DAO\db_Entidades.cs" />

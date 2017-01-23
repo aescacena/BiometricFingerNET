@@ -73,15 +73,16 @@ namespace BiometricFinger
         /// <returns>Fingerprint</returns>
         public Fingerprint leeImage()
         {
+            DateTime fechaHora = DateTime.Now;  //Capturamos la fecha y hora de recepción de huella
             byte[] inBuffer = new byte[4096];   //Creamos array de bytes con tamaño inicial que vamos a leer en el buffer
-            int aux = 0;    //variable auxiliar para contar el número de bytes leídos
-            int condicional = 0;    //Variable condicional para salir del do while
+            int aux = 0;                        //variable auxiliar para contar el número de bytes leídos
+            int condicional = 0;                //Variable condicional para salir del do while
 
             do{
-                condicional = ioStream.Read(inBuffer, aux, 4096);   //Lee del buffer como máximo 4096 y almacena en condicional el total de bytes leídos
-                aux += condicional; //suma la cantidad de bytes que acabamos de leer con los bytes leídos en vueltas anteriores
+                condicional = ioStream.Read(inBuffer, aux, 4096);           //Lee del buffer como máximo 4096 y almacena en condicional el total de bytes leídos
+                aux += condicional;                                         //suma la cantidad de bytes que acabamos de leer con los bytes leídos en vueltas anteriores
                 Array.Resize(ref inBuffer, inBuffer.Length + condicional);  //redireccionamos el array de bytes en la medida justa leídos
-                Thread.Sleep(70);   //Dormimos el hilo 0.5seg para que no pierda información en la lectura
+                Thread.Sleep(70);                                           //Dormimos el hilo 0.5seg para que no pierda información en la lectura
             }
             while (condicional >= 4096);    //mientras la lectura de bytes sea menor que el condicional
             
@@ -89,9 +90,7 @@ namespace BiometricFinger
             using (var ms = new MemoryStream(inBuffer))
             {
                 Image image = Image.FromStream(ms); //Guardamos el buffer en una variable tipo Image
-                bmp = (Bitmap)image;    //Le aplicamos un "Cast" PARA ALMACENAR en bitmap
-                //image.Save("c:\\imagenREMOTO.jpg"); //Guardamos en disco
-                DateTime fechaHora = DateTime.Now;
+                bmp = (Bitmap)image;                //Le aplicamos un "Cast" PARA ALMACENAR en bitmap
                 image.Save(@"C:\Huellas\"+ "FECHA("+fechaHora.Day.ToString()+"-"+ fechaHora.Month.ToString()+"-"+ fechaHora.Year.ToString()+")_"
                                         +"HORA("+fechaHora.Hour.ToString()+"h-"+ fechaHora.Minute+"m-"+ fechaHora.Second+"s).jpg"); //Guardamos en disco con la fecha y la hora de la recepción
             }

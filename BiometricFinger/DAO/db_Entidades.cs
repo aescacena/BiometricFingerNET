@@ -11,5 +11,6 @@ namespace BiometricFinger
     {
         public db_Entidades() : base(nameOrConnectionString: "MonkeyFist") { }
         public DbSet<Persona> Personal { get; set; }
+        public DbSet<EstadoComparacion> DbSetEstadoComparacion { get; set; }
     }
 }

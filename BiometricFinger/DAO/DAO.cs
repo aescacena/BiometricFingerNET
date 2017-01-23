@@ -50,5 +50,22 @@ namespace BiometricFinger
             db_Entidades.Entry(persona).CurrentValues.SetValues(personaEditado);
             return db_Entidades.SaveChanges() > 0;
         }
+
+        /// <summary>
+        /// Realiza una insercción en BBDD con el estado de la comparación de la huella.
+        /// </summary>
+        /// <param name="id_persona">identificador de la persona</param>
+        /// <param name="puntuacion">valor de la puntuación</param>
+        /// <param name="mac">Dirección mac del dispositivo usado para la captura de la huella</param>
+        public bool insertaEstadoComparacion(int id_persona, float puntuacion)
+        {
+            EstadoComparacion estado = new EstadoComparacion();
+
+            estado.id_personal = id_persona;
+            estado.puntuacion = puntuacion;
+
+            db_Entidades.DbSetEstadoComparacion.Add(estado);
+            return db_Entidades.SaveChanges() > 0;
+        }
     }
 }
