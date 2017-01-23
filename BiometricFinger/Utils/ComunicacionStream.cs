@@ -81,7 +81,7 @@ namespace BiometricFinger
                 condicional = ioStream.Read(inBuffer, aux, 4096);   //Lee del buffer como máximo 4096 y almacena en condicional el total de bytes leídos
                 aux += condicional; //suma la cantidad de bytes que acabamos de leer con los bytes leídos en vueltas anteriores
                 Array.Resize(ref inBuffer, inBuffer.Length + condicional);  //redireccionamos el array de bytes en la medida justa leídos
-                Thread.Sleep(50);   //Dormimos el hilo 0.5seg para que no pierda información en la lectura
+                Thread.Sleep(70);   //Dormimos el hilo 0.5seg para que no pierda información en la lectura
             }
             while (condicional >= 4096);    //mientras la lectura de bytes sea menor que el condicional
             
@@ -90,7 +90,10 @@ namespace BiometricFinger
             {
                 Image image = Image.FromStream(ms); //Guardamos el buffer en una variable tipo Image
                 bmp = (Bitmap)image;    //Le aplicamos un "Cast" PARA ALMACENAR en bitmap
-                image.Save("c:\\imagenREMOTO.jpg"); //Guardamos en disco
+                //image.Save("c:\\imagenREMOTO.jpg"); //Guardamos en disco
+                DateTime fechaHora = DateTime.Now;
+                image.Save(@"C:\Huellas\"+ "FECHA("+fechaHora.Day.ToString()+"-"+ fechaHora.Month.ToString()+"-"+ fechaHora.Year.ToString()+")_"
+                                        +"HORA("+fechaHora.Hour.ToString()+"h-"+ fechaHora.Minute+"m-"+ fechaHora.Second+"s).jpg"); //Guardamos en disco con la fecha y la hora de la recepción
             }
 
             Fingerprint fingerPrint = new Fingerprint();

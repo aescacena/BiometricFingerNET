@@ -68,8 +68,8 @@ namespace BiometricFinger
         /// </summary>
         public void Start()
         {
-            listener = new TcpListener(IPAddress.Parse("161.33.129.202"), port);
-            //listener = new TcpListener(IPAddress.Parse("192.168.1.137"), port);
+            listener = new TcpListener(IPAddress.Parse("161.33.129.191"), port);
+            //listener = new TcpListener(IPAddress.Parse("161.33.129.23"), port);
             Console.WriteLine("Started server on port " + port);
 
             Thread thread = new Thread(new ThreadStart(ListenForClients));
@@ -345,7 +345,7 @@ namespace BiometricFinger
                 //Creamos Objeto AfisEngine el cual realiza la identificación de usuarios 
                 AfisEngine Afis = new AfisEngine();
                 // Marcamos límite para verificar una huella como encontrada
-                Afis.Threshold = 50;
+                Afis.Threshold = 40; //Niveles provados por orden: 50;
                 Afis.Extract(usuarioABuscar);
 
                 //Obtenemos los usuarios registrados en la base de datos

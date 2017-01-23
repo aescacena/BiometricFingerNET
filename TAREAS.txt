@@ -1,0 +1,49 @@
+------------------------------------------------------------------------------------------------------------------------
+DESCRIPCIÓN DE IDEAS Y TAREAS A REALIZAR
+------------------------------------------------------------------------------------------------------------------------
+	
+- Crear ficheros de LOG diarios donde se indicará todo lo ocurrido con el servidor "BiometricFinger"
+
+- Añadir software de telemetría para control y actualización de BBDD SQLite local en TABLETS, con esto tendríamos siempre
+  actualizados las picadas de los operarios localmente, además se pueden individualizar mensajes procpios para los 
+  operarios o mensajes globales para todos.
+	
+	Posible solución:
+		- MQTT o RabbitMQ
+
+- Recoger niveles de comparación de huellas para sacar estadísticas y nivelar bien el nivel de comprobación de huellas.
+	
+	Posible solución:
+		- Recoger esta información en la base de datos de todo aquel que inserte la huella ya quede verificado
+		  o no.
+
+------------------------------------------------------------------------------------------------------------------------
+TAREAS SECUNDARIAS A REALIZAR
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+PROBLEMAS A SOLUCIONAR
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+DESCOMENTAR
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+TAREAS REALIZADAS
+------------------------------------------------------------------------------------------------------------------------
+- Almacenar las imagenes de huellas
+	Guardar en disco las huellas tomadas de cada operario y poder observar los estados de capturas y recepción.
+
+	Solución adquirida: Las huellas son almacenadas con el nombre de FECHA(dia-mes-año)_HORA(horas-minutos-segundos).jpg
+		en c:\Huellas\
+
+------------------------------------------------------------------------------------------------------------------------
+PROBLEMAS SOLUCIONADOS
+-------------------------------------------------------------------------------------------------------------------------
